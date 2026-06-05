@@ -3,12 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fakeout 影院 - 八集聯播系統</title>
+    <title>Fakeout 短影音放映廳</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Font Awesome Icons for beautiful controls -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-　　<link rel="icon" href="./logo.jpg" type="image/jpeg">
+    <!-- 載入中文字型 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="icon" href="./logo.jpg" type="image/jpeg">
     <style>
         /* 隱藏原生影片控制條，使用我們自訂的精美控制條 */
         video::-webkit-media-controls {
@@ -32,52 +36,96 @@
         .gold-glow:hover {
             box-shadow: 0 0 15px rgba(197, 168, 92, 0.5);
         }
+
+        /* 🌟 專屬影院暗色風：融入導覽列的返回首頁按鈕 */
+        .back-home-btn {
+            position: relative; /* 改為相對定位，融入導覽列排版 */
+            display: inline-flex;
+            align-items: center;
+            justify-content: flex-start;
+            width: 44px; /* 初始圓形寬度 */
+            height: 44px;
+            padding: 0;
+            background-color: rgba(24, 24, 27, 0.85); /* 影院深黑磨砂玻璃背景 */
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(245, 158, 11, 0.4); /* 主題色金黃/琥珀色 */
+            border-radius: 50px;
+            color: #f59e0b; /* 琥珀金色 */
+            text-decoration: none;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden;
+            white-space: nowrap;
+            flex-shrink: 0; /* 確保在小螢幕時不會被擠壓變形 */
+        }
+
+        .back-home-btn i {
+            font-size: 16px;
+            width: 42px; /* 固定寬度讓 Icon 於圓形時居中 */
+            flex-shrink: 0;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            transition: transform 0.3s ease, color 0.3s ease;
+        }
+
+        .back-home-btn span {
+            font-family: 'Noto Sans TC', sans-serif;
+            font-size: 13px;
+            font-weight: 500;
+            max-width: 0;
+            opacity: 0;
+            transition: max-width 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+            display: inline-block;
+            vertical-align: middle;
+        }
+
+        /* 懸停展開樣式（變為暖金色背景、寬度滑順伸展並略帶霓虹光暈） */
+        .back-home-btn:hover {
+            width: 130px; /* 展開後的精美寬度 */
+            background-color: #f59e0b; /* 金黃色 */
+            color: #09090b; /* 亮黃背景下改用深黑字體，確保清晰可讀 */
+            border-color: #f59e0b;
+            box-shadow: 0 4px 15px rgba(245, 158, 11, 0.45);
+        }
+
+        .back-home-btn:hover i {
+            color: #09090b;
+            width: 36px; /* 稍微縮小佔位讓出空間給文字 */
+            transform: scale(1.05);
+        }
+
+        .back-home-btn:hover span {
+            max-width: 80px;
+            opacity: 1;
+        }
     </style>
 </head>
 <body class="bg-stone-950 text-stone-100 min-h-screen flex flex-col justify-between font-sans selection:bg-amber-500 selection:text-black">
-<a href="./index.html" style="
-    position: fixed;
-    top: 20px;
-    left: 20px;
-    z-index: 9999;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 20px;
-    background-color: rgba(255, 255, 255, 0.85);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(114, 154, 192, 0.4); /* 使用主題色藍灰 729ac0 的線條 */
-    border-radius: 50px;
-    color: # d27575; /* 使用主題色赭紅 d27575 */
-    font-family: 'Noto Sans TC', sans-serif;
-    font-size: 14px;
-    font-weight: 500;
-    text-decoration: none;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
-    transition: all 0.3s ease;
-" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(114, 154, 192, 0.3)'; this.style.backgroundColor='#729ac0'; this.style.color='#ffffff';" 
-  onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(0, 0, 0, 0.08)'; this.style.backgroundColor='rgba(255, 255, 255, 0.85)'; this.style.color='#d27575';">
-    <i class="fa-solid fa-house"></i>
-    <span>返回首頁</span>
-</a>
+
     <!-- 首次進入網頁的互動遮罩（完美解決瀏覽器禁止有聲影片自動播放的限制） -->
     <div id="welcomeOverlay" class="fixed inset-0 bg-stone-950 z-50 flex flex-col items-center justify-center p-4 transition-opacity duration-500">
         <div class="text-center max-w-md">
             <h1 class="text-4xl font-extrabold text-amber-500 tracking-wider mb-2">PROJECT FAKEOUT</h1>
-            <p class="text-stone-400 mb-8">歡迎來到專屬放映廳</p>
+            <p class="text-stone-400 mb-8">歡迎來到短影音放映廳</p>
             <button id="btnEnterTheater" class="px-8 py-4 bg-amber-500 text-stone-950 font-bold text-lg rounded-full shadow-lg hover:bg-amber-400 transition-all duration-300 transform hover:scale-105 gold-glow">
-                <i class="fa-solid fa-ticket mr-2"></i> 點擊進入影院
+                <i class="fa-solid fa-ticket mr-2"></i> 點擊進入
             </button>
-            <p class="text-xs text-stone-500 mt-4">點擊後將會開始播放宣傳片（含聲音）</p>
+            <p class="text-xs text-stone-500 mt-4">點擊後將會開始播放影片</p>
         </div>
     </div>
 
     <!-- 頂部導覽列 -->
-    <header class="border-b border-stone-800 bg-stone-900/80 backdrop-blur px-6 py-4 sticky top-0 z-40">
+    <header class="border-b border-stone-800 bg-stone-900/80 backdrop-blur px-6 py-3 sticky top-0 z-40">
         <div class="max-w-7xl mx-auto flex justify-between items-center">
-            <div class="flex items-center space-x-3">
-                <span class="bg-amber-500 text-stone-950 text-xs font-bold px-2.5 py-1 rounded">PRO</span>
+            <div class="flex items-center space-x-4">
+                <!-- 🌟 動態返回首頁按鈕 (已成功移入導覽列並完美對齊) -->
+                <a href="./index.html" class="back-home-btn" title="返回首頁">
+                    <i class="fa-solid fa-house"></i>
+                    <span>返回首頁</span>
+                </a>
+                <!-- 移除 PRO 小標籤，文字更顯得高雅大器 -->
                 <h1 class="text-xl font-bold tracking-widest text-amber-500">PROJECT FAKEOUT</h1>
             </div>
             <div class="text-sm text-stone-400">
@@ -109,11 +157,11 @@
                             <span id="countdownText">10</span>
                         </div>
                         <h2 class="text-2xl font-bold text-stone-100 mb-2">本集播放完畢</h2>
-                        <p class="text-stone-400 text-sm mb-8">即將自動返回宣傳片...</p>
+                        <p class="text-stone-400 text-sm mb-8">即將自動隨機播放...</p>
                         
                         <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
                             <button id="btnReturn" class="w-full sm:w-auto px-6 py-3 bg-stone-800 hover:bg-stone-700 text-stone-200 font-semibold rounded-lg transition duration-200 flex items-center justify-center">
-                                <i class="fa-solid fa-arrow-rotate-left mr-2"></i> 返回宣傳片
+                                <i class="fa-solid fa-arrow-rotate-left mr-2"></i> 返回隨機播放
                             </button>
                             <button id="btnNext" class="w-full sm:w-auto px-8 py-3 bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold rounded-lg transition duration-200 flex items-center justify-center shadow-lg shadow-amber-500/20">
                                 下一集 <i class="fa-solid fa-chevron-right ml-2"></i>
@@ -156,9 +204,6 @@
 
                         <!-- 右側：返回宣傳片按鈕與全螢幕 -->
                         <div class="flex items-center space-x-4">
-                            <button id="btnQuickPromo" class="text-xs bg-stone-800 hover:bg-stone-700 text-stone-300 hover:text-amber-400 transition px-3 py-1.5 rounded border border-stone-700" title="切換回宣傳片">
-                                <i class="fa-solid fa-photo-film mr-1"></i> 宣傳片
-                            </button>
                             <button id="btnFullscreen" class="text-stone-300 hover:text-amber-400 transition text-lg w-8 h-8 flex items-center justify-center" title="全螢幕">
                                 <i class="fa-solid fa-expand"></i>
                             </button>
@@ -175,7 +220,7 @@
                         <span class="text-xs font-bold text-amber-500 uppercase tracking-widest" id="infoTag">Promo Video</span>
                         <h2 class="text-2xl font-bold mt-1" id="infoTitle">project_fakeout video</h2>
                         <div class="text-stone-400 text-sm mt-2 leading-relaxed" id="infoDesc">
-                            現正播放主打宣傳片。此影片設置為有聲、自動無限迴圈播放。您可於右側（或下方）播放清單中選擇您想觀看的單集內容。
+                            影片隨機播放中，可於右側清單中選擇想觀看的單集內容。
                         </div>
                     </div>
                 </div>
@@ -205,7 +250,6 @@
                     </button>
 
                     <!-- 動態生成 1-8 集按鈕 -->
-                    <!-- 這些將在 JS 中生成，方便狀態管理 -->
                 </div>
             </div>
         </div>
@@ -215,7 +259,7 @@
     <!-- 頁尾 -->
     <footer class="border-t border-stone-900 bg-stone-950/80 py-4 text-center text-xs text-stone-500">
         <div class="max-w-7xl mx-auto px-4">
-            <p>© 2026 PROJECT FAKEOUT. 版權所有。若影片無法播放，請檢查本地影片檔案路徑是否正確。</p>
+            <p>© 2026 PROJECT FAKEOUT. 版權所有。</p>
         </div>
     </footer>
 
@@ -224,7 +268,7 @@
         // --- 狀態與資料定義 ---
         const EPISODES_COUNT = 8;
         
-        // 影片資訊列表 (修正多行字串造成 JS 語法崩潰的問題，使用單行 + <br> 方式)
+        // 影片資訊列表
         const playlistData = [
             { id: 'promo', title: '1-8集影片隨機播放中', file: '', isPromo: true, desc: '目前正在隨機播放 8 集內容。' },
             { id: 1, title: '括號記得刪，一則1000', file: 'video/episode1.mp4', isPromo: false, desc: '› 欸你不覺得那個叫「視緋對錯」的帳號看起來超有質感的嗎？<br>› 追一下唄？（這句記得刪，一則 200）' },
@@ -334,8 +378,7 @@
             videoSource.src = videoInfo.file;
             videoPlayer.load();
 
-            // 隨機輪播與單集播放的循環設定：
-            // 隨機輪播不設為原生 loop，以便影片播完時能觸發 'ended' 事件更換下一首隨機影片
+            // 隨機輪播與單集播放的循環設定
             if (videoInfo.isPromo) {
                 videoPlayer.loop = false; 
                 currentStatus.textContent = "隨機輪播 (Loop)";
@@ -379,14 +422,12 @@
 
         // 更新清單按鈕高亮樣式
         function updatePlaylistActiveState(activeIndex) {
-            // 先將所有按鈕重設為普通樣式
             playlistData.forEach((item, index) => {
                 const btnId = item.isPromo ? 'playlist-promo' : `playlist-${item.id}`;
                 const btn = document.getElementById(btnId);
                 if (!btn) return;
 
                 if (index === activeIndex) {
-                    // 高亮樣式
                     if (item.isPromo) {
                         btn.className = "w-full text-left p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center space-x-3 transition-all duration-200";
                     } else {
@@ -395,7 +436,6 @@
                         if (badge) badge.className = "w-12 h-8 bg-stone-950 rounded flex items-center justify-center text-xs font-mono font-bold text-sky-400 ep-number-badge";
                     }
                 } else {
-                    // 普通樣式
                     if (item.isPromo) {
                         btn.className = "w-full text-left p-3 rounded-lg bg-stone-900 border border-stone-800/80 hover:border-stone-700 text-stone-300 hover:text-stone-100 flex items-center space-x-3 transition-all duration-200";
                     } else {
@@ -407,37 +447,29 @@
             });
         }
 
-
         // --- 影片結束事件與倒數互動機制 ---
         videoPlayer.addEventListener('ended', () => {
-            // 如果當前是隨機輪播模式 (index === 0)
             if (currentPlayIndex === 0) {
-                // 自動隨機挑選並載入下一部影片播放，達到無限迴圈
                 loadAndPlayVideo(0);
             } else {
-                // 如果是 1-8 集指定播放完畢，則顯示互動層
                 showInteractiveOverlay();
             }
         });
 
         // 顯示 10 秒倒數計時互動覆蓋層
         function showInteractiveOverlay() {
-            // 設定「下一集」按鈕文字與狀態
             if (currentPlayIndex < EPISODES_COUNT) {
                 btnNext.innerHTML = `下一集 (EP${String(currentPlayIndex + 1).padStart(2, '0')}) <i class="fa-solid fa-chevron-right ml-2"></i>`;
                 btnNext.style.display = 'flex';
             } else {
-                // 如果已經是最後一集 (第8集)，不顯示「下一集」，只留返回
                 btnNext.style.display = 'none';
             }
 
-            // 顯示覆蓋層
             interactiveOverlay.classList.remove('opacity-0', 'pointer-events-none');
             interactiveOverlay.classList.add('opacity-100');
             overlayContent.classList.remove('translate-y-4');
             overlayContent.classList.add('translate-y-0');
 
-            // 啟動 10 秒倒數
             countdownValue = 10;
             countdownText.textContent = countdownValue;
             
@@ -449,7 +481,6 @@
                 
                 if (countdownValue <= 0) {
                     clearInterval(countdownTimer);
-                    // 10秒內無操作，自動返回宣傳片
                     playPromo();
                 }
             }, 1000);
@@ -467,12 +498,11 @@
             overlayContent.classList.add('translate-y-4');
         }
 
-        // 互動層按鈕：【返回宣傳片】
+        // 互動層按鈕
         btnReturn.addEventListener('click', () => {
             playPromo();
         });
 
-        // 互動層按鈕：【下一集】
         btnNext.addEventListener('click', () => {
             if (currentPlayIndex < EPISODES_COUNT) {
                 playEpisode(currentPlayIndex + 1);
@@ -481,10 +511,7 @@
             }
         });
 
-
-        // --- 自訂控制條功能 (Play, Pause, Mute, Seek, Volume) ---
-
-        // 更新 播放/暫停 按鈕圖示
+        // --- 自訂控制條功能 ---
         function updatePlayPauseIcon(isPlaying) {
             if (isPlaying) {
                 btnPlayPause.innerHTML = `<i class="fa-solid fa-pause"></i>`;
@@ -493,7 +520,6 @@
             }
         }
 
-        // 點擊 播放/暫停
         btnPlayPause.addEventListener('click', () => {
             if (videoPlayer.paused) {
                 videoPlayer.play();
@@ -504,9 +530,7 @@
             }
         });
 
-        // 點擊影片主體也可以 播放/暫停
         videoPlayer.addEventListener('click', () => {
-            // 如果互動層顯示中，不允許點擊影片暫停
             if (interactiveOverlay.classList.contains('opacity-100')) return;
             
             if (videoPlayer.paused) {
@@ -518,11 +542,9 @@
             }
         });
 
-        // 當影片狀態自發性改變（例如瀏覽器事件）時同步按鈕
         videoPlayer.addEventListener('play', () => updatePlayPauseIcon(true));
         videoPlayer.addEventListener('pause', () => updatePlayPauseIcon(false));
 
-        // 格式化時間 (秒 -> mm:ss)
         function formatTime(seconds) {
             if (isNaN(seconds)) return "00:00";
             const mins = Math.floor(seconds / 60);
@@ -530,7 +552,6 @@
             return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
         }
 
-        // 監聽進度更新
         videoPlayer.addEventListener('timeupdate', () => {
             if (videoPlayer.duration) {
                 const percent = (videoPlayer.currentTime / videoPlayer.duration) * 100;
@@ -539,19 +560,16 @@
             }
         });
 
-        // 監聽影片長度加載完畢
         videoPlayer.addEventListener('loadedmetadata', () => {
             durationTimeText.textContent = formatTime(videoPlayer.duration);
         });
 
-        // 進度條跳轉功能 (Seek)
         progressBarContainer.addEventListener('click', (e) => {
             const rect = progressBarContainer.getBoundingClientRect();
             const clickPosition = (e.clientX - rect.left) / rect.width;
             videoPlayer.currentTime = clickPosition * videoPlayer.duration;
         });
 
-        // 拖曳進度條支援 (電腦版/手機版)
         let isDraggingProgress = false;
         progressBarContainer.addEventListener('mousedown', () => isDraggingProgress = true);
         document.addEventListener('mouseup', () => isDraggingProgress = false);
@@ -559,12 +577,11 @@
             if (isDraggingProgress) {
                 const rect = progressBarContainer.getBoundingClientRect();
                 let clickPosition = (e.clientX - rect.left) / rect.width;
-                clickPosition = Math.max(0, Math.min(1, clickPosition)); // 限制在 0-1 之間
+                clickPosition = Math.max(0, Math.min(1, clickPosition));
                 videoPlayer.currentTime = clickPosition * videoPlayer.duration;
             }
         });
 
-        // 音量滑動條調整
         volumeSlider.addEventListener('input', (e) => {
             const vol = e.target.value;
             videoPlayer.volume = vol;
@@ -572,7 +589,6 @@
             updateVolumeIcon(vol, videoPlayer.muted);
         });
 
-        // 一鍵靜音與恢復
         let lastVolume = 0.8;
         btnMute.addEventListener('click', () => {
             if (videoPlayer.muted) {
@@ -598,14 +614,12 @@
             }
         }
 
-        // 控制條中的快速返回宣傳片按鈕
         btnQuickPromo.addEventListener('click', () => {
             playPromo();
         });
 
-        // 全螢幕切換
         btnFullscreen.addEventListener('click', () => {
-            const videoContainer = videoPlayer.parentElement; // 使用容器做全螢幕以保留自訂控制條
+            const videoContainer = videoPlayer.parentElement;
             if (!document.fullscreenElement) {
                 videoContainer.requestFullscreen().catch(err => {
                     console.log(`全螢幕切換錯誤: ${err.message}`);
@@ -615,12 +629,9 @@
             }
         });
 
-
         // --- 初始化執行 ---
         window.onload = function() {
             initPlaylistUI();
-            
-            // 預設將音量條設置為 0.8
             videoPlayer.volume = 0.8;
             volumeSlider.value = 0.8;
         };
