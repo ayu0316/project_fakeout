@@ -167,14 +167,14 @@
                 
                 <!-- 播放清單捲動區域 -->
                 <div class="flex-grow overflow-y-auto space-y-2 pr-1" id="playlistContainer">
-                    <!-- 宣傳片項目 -->
+                    <!-- 宣傳片/隨機輪播項目 -->
                     <button id="playlist-promo" onclick="playPromo()" class="w-full text-left p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center space-x-3 transition-all duration-200">
                         <div class="w-12 h-8 bg-stone-950 rounded flex items-center justify-center text-xs font-bold border border-amber-500/20">
-                            <i class="fa-solid fa-photo-film"></i>
+                            <i class="fa-solid fa-shuffle"></i>
                         </div>
                         <div class="flex-grow min-w-0">
-                            <p class="font-bold text-sm truncate">宣傳片</p>
-                            <p class="text-xs text-amber-500/70 truncate">project_fakeout</p>
+                            <p class="font-bold text-sm truncate">隨機輪播</p>
+                            <p class="text-xs text-amber-500/70 truncate">1-8集隨機播放</p>
                         </div>
                     </button>
 
@@ -200,7 +200,7 @@
         
         // 影片資訊列表 (修正多行字串造成 JS 語法崩潰的問題，使用單行 + <br> 方式)
         const playlistData = [
-            { id: 'promo', title: '右側播放清單中可以選擇想觀看的單集內容~', file: 'video/project_fakeout video.mp4', isPromo: true, desc: '本影片為全集數自動播放' },
+            { id: 'promo', title: '1-8集影片隨機播放中', file: '', isPromo: true, desc: '目前正在隨機播放 8 集內容。' },
             { id: 1, title: '括號記得刪，一則1000', file: 'video/episode1.mp4', isPromo: false, desc: '› 欸你不覺得那個叫「視緋對錯」的帳號看起來超有質感的嗎？<br>› 追一下唄？（這句記得刪，一則 200）' },
             { id: 2, title: '爬101不是很簡單？', file: 'video/episode2.mp4', isPromo: false, desc: '› 最近覺得大胃王比賽根本沒甚麼<br>› 那些大胃王又不是真的有吃<br>› 只是胡吃海塞一通而已<br>› 我上我也行阿...（反串要註明）' },
             { id: 3, title: 'Gumayusi要加入韓華？', file: 'video/episode3.mp4', isPromo: false, desc: '› 我跟你講俄烏戰爭再三個月就要結束了<br>› 真的，信我，媽祖託夢跟我講的<br>› 媽祖：虫合' },
@@ -277,26 +277,42 @@
                 welcomeOverlay.classList.add('hidden');
             }, 500);
 
-            // 開始播放預設的宣傳片
+            // 開始播放隨機輪播
             playPromo();
         });
 
         // --- 播放影片核心函式 ---
         function loadAndPlayVideo(index) {
             currentPlayIndex = index;
-            const videoInfo = playlistData[index];
+            let videoInfo;
             
             // 停止任何正在進行的倒數計時並隱藏覆蓋層
             hideInteractiveOverlay();
+
+            // 若切換至「隨機輪播模式」(index = 0)，動態隨機挑選 1 到 8 集的影片來播放
+            if (index === 0) {
+                const randomEpId = Math.floor(Math.random() * EPISODES_COUNT) + 1;
+                const realEp = playlistData[randomEpId];
+                videoInfo = {
+                    id: 'promo',
+                    title: `隨機輪播中：${realEp.title}`,
+                    file: realEp.file,
+                    isPromo: true,
+                    desc: `目前正在隨機輪播 8 集內容。<br><strong>【當前隨機放映】第 ${randomEpId} 集 - ${realEp.title}</strong><br><br>${realEp.desc}`
+                };
+            } else {
+                videoInfo = playlistData[index];
+            }
 
             // 更換影片來源
             videoSource.src = videoInfo.file;
             videoPlayer.load();
 
-            // 宣傳片需要無限迴圈
+            // 隨機輪播與單集播放的循環設定：
+            // 隨機輪播不設為原生 loop，以便影片播完時能觸發 'ended' 事件更換下一首隨機影片
             if (videoInfo.isPromo) {
-                videoPlayer.loop = true;
-                currentStatus.textContent = "宣傳片 (Loop)";
+                videoPlayer.loop = false; 
+                currentStatus.textContent = "隨機輪播 (Loop)";
                 infoTag.textContent = "Promo Video";
                 infoTag.className = "text-xs font-bold text-amber-500 uppercase tracking-widest";
             } else {
@@ -325,7 +341,7 @@
             }
         }
 
-        // 快捷播放宣傳片
+        // 快捷播放隨機輪播
         function playPromo() {
             loadAndPlayVideo(0);
         }
@@ -368,11 +384,12 @@
 
         // --- 影片結束事件與倒數互動機制 ---
         videoPlayer.addEventListener('ended', () => {
-            const currentVideo = playlistData[currentPlayIndex];
-            
-            // 如果是宣傳片，因為設定了 loop=true，理論上不會觸發 ended。
-            // 但如果是 1-8 集播放完畢：
-            if (!currentVideo.isPromo) {
+            // 如果當前是隨機輪播模式 (index === 0)
+            if (currentPlayIndex === 0) {
+                // 自動隨機挑選並載入下一部影片播放，達到無限迴圈
+                loadAndPlayVideo(0);
+            } else {
+                // 如果是 1-8 集指定播放完畢，則顯示互動層
                 showInteractiveOverlay();
             }
         });
