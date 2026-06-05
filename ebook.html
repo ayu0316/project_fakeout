@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>數位資訊生存指南 - 電子書</title>
+　　<link rel="icon" href="./logo.jpg" type="image/jpeg">
     <style>
         /* 1. 滿版全螢幕基礎設定 */
         html, body {
@@ -215,6 +216,32 @@
     </style>
 </head>
 <body>
+　　<a href="./index.html" style="
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    z-index: 9999;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    background-color: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(114, 154, 192, 0.4); /* 使用主題色藍灰 729ac0 的線條 */
+    border-radius: 50px;
+    color: # d27575; /* 使用主題色赭紅 d27575 */
+    font-family: 'Noto Sans TC', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(114, 154, 192, 0.3)'; this.style.backgroundColor='#729ac0'; this.style.color='#ffffff';" 
+  onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(0, 0, 0, 0.08)'; this.style.backgroundColor='rgba(255, 255, 255, 0.85)'; this.style.color='#d27575';">
+    <i class="fa-solid fa-house"></i>
+    <span>返回首頁</span>
+</a>
 
     <div class="top-toolbar">
         <button class="fullscreen-btn" onclick="toggleFullscreen()">

@@ -8,6 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Font Awesome Icons for beautiful controls -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+　　<link rel="icon" href="./logo.jpg" type="image/jpeg">
     <style>
         /* 隱藏原生影片控制條，使用我們自訂的精美控制條 */
         video::-webkit-media-controls {
@@ -34,7 +35,32 @@
     </style>
 </head>
 <body class="bg-stone-950 text-stone-100 min-h-screen flex flex-col justify-between font-sans selection:bg-amber-500 selection:text-black">
-
+<a href="./index.html" style="
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    z-index: 9999;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    background-color: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(114, 154, 192, 0.4); /* 使用主題色藍灰 729ac0 的線條 */
+    border-radius: 50px;
+    color: # d27575; /* 使用主題色赭紅 d27575 */
+    font-family: 'Noto Sans TC', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(114, 154, 192, 0.3)'; this.style.backgroundColor='#729ac0'; this.style.color='#ffffff';" 
+  onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(0, 0, 0, 0.08)'; this.style.backgroundColor='rgba(255, 255, 255, 0.85)'; this.style.color='#d27575';">
+    <i class="fa-solid fa-house"></i>
+    <span>返回首頁</span>
+</a>
     <!-- 首次進入網頁的互動遮罩（完美解決瀏覽器禁止有聲影片自動播放的限制） -->
     <div id="welcomeOverlay" class="fixed inset-0 bg-stone-950 z-50 flex flex-col items-center justify-center p-4 transition-opacity duration-500">
         <div class="text-center max-w-md">
