@@ -4,7 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>數位資訊生存指南 - 電子書</title>
-　　<link rel="icon" href="./logo.jpg" type="image/jpeg">
+    <!-- 網頁標籤頁縮圖 Logo -->
+    <link rel="icon" href="./logo.jpg" type="image/jpeg">
+    <!-- 載入 Google 字體與 FontAwesome 圖示 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
     <style>
         /* 1. 滿版全螢幕基礎設定 */
         html, body {
@@ -13,7 +20,7 @@
             width: 100%;
             height: 100%;
             background-color: #f4f4f4; /* 兩側底色維持淺灰 */
-            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+            font-family: "Noto Sans TC", "Helvetica Neue", Helvetica, Arial, sans-serif;
             overflow: hidden; 
         }
 
@@ -45,7 +52,73 @@
             gap: 5px;
         }
 
-        /* 3. 電子書大包裝 */
+        /* 3. 懸浮返回首頁按鈕（初始為圓形 icon，懸停時流暢展開為 icon + 返回首頁） */
+        .back-home-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 9999;
+            display: inline-flex;
+            align-items: center;
+            justify-content: flex-start;
+            width: 46px; /* 初始圓形寬度 */
+            height: 46px;
+            padding: 0;
+            background-color: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(114, 154, 192, 0.4); /* 使用主題色藍灰 729ac0 */
+            border-radius: 50px;
+            color: #d27575; /* 使用主題色赭紅 d27575 */
+            text-decoration: none;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden;
+            white-space: nowrap;
+        }
+
+        .back-home-btn i {
+            font-size: 18px;
+            width: 44px; /* 固定寬度讓 Icon 於圓形時居中 */
+            flex-shrink: 0;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            transition: transform 0.3s ease, color 0.3s ease;
+        }
+
+        .back-home-btn span {
+            font-family: 'Noto Sans TC', sans-serif;
+            font-size: 14px;
+            font-weight: 500;
+            max-width: 0;
+            opacity: 0;
+            transition: max-width 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+            display: inline-block;
+            vertical-align: middle;
+        }
+
+        /* 懸停展開樣式（變為主題色藍灰、寬度伸展） */
+        .back-home-btn:hover {
+            width: 140px; /* 展開後的精美寬度 */
+            background-color: #729ac0; /* 主題色藍灰 */
+            color: #ffffff;
+            border-color: #729ac0;
+            box-shadow: 0 6px 20px rgba(114, 154, 192, 0.35);
+        }
+
+        .back-home-btn:hover i {
+            color: #ffffff;
+            width: 40px; /* 稍微縮小佔位讓出空間給文字 */
+            transform: scale(1.05);
+        }
+
+        .back-home-btn:hover span {
+            max-width: 80px;
+            opacity: 1;
+        }
+
+        /* 4. 電子書大包裝 */
         .stage-container {
             width: 100%;
             height: 100%;
@@ -55,10 +128,7 @@
             justify-content: center;
         }
 
-        /* 4. 電子書容器
-           修正核心：取消死板的 width 限制，改用 max-width 控制，
-           讓裡面的內頁自己依照原圖比例把寬度自然撐開！
-        */
+        /* 5. 電子書容器 */
         .book-container {
             position: absolute;
             height: 100vh; 
@@ -104,9 +174,7 @@
             z-index: 10;
         }
 
-        /* 【雙頁排版】
-           修正：寬度設定為 auto，高度 100%，由裡面的圖片（img）決定寬度
-        */
+        /* 【雙頁排版】 */
         .double-page .left-side, 
         .double-page .right-side {
             height: 100%;
@@ -123,10 +191,7 @@
             overflow: hidden;
         }
 
-        /* 圖片設定：
-           終極修正：高度 100% 貼齊螢幕，寬度設為 auto 讓它依據 2150x3035 原圖比例自由舒展，
-           搭配 object-fit: contain 確保絕對不變形、不壓扁！
-        */
+        /* 圖片設定：高度 100% 貼齊螢幕，寬度自動縮放 */
         img {
             height: 100%;
             width: auto;
@@ -137,12 +202,11 @@
             box-shadow: 0 0 20px rgba(0,0,0,0.05); /* 讓書頁邊緣有淡淡的影子 */
         }
 
-        /* 5. 兩側翻頁大按鈕（覆蓋於書本外側的其餘空間） */
+        /* 6. 兩側翻頁大按鈕 */
         .side-btn {
             position: absolute;
             top: 0;
             height: 100%;
-            /* 動態撐滿書本左右兩邊剩下的所有視窗範圍 */
             width: calc((100vw - 113vh) / 2);
             min-width: 80px; 
             background-color: transparent; 
@@ -156,7 +220,7 @@
             transition: background-color 0.2s ease;
         }
         #prevBtn { left: 0; }
-        #nextBtn { right: right: 0; left: auto; right: 0; }
+        #nextBtn { right: 0; left: auto; }
 
         .side-btn:hover:not(:disabled) {
             background-color: rgba(0, 0, 0, 0.02); 
@@ -185,7 +249,7 @@
             opacity: 0 !important;
         }
 
-        /* 6. 中央下方的下拉選單 */
+        /* 7. 中央下方的下拉選單 */
         .menu-container {
             position: absolute;
             bottom: 25px;
@@ -216,32 +280,12 @@
     </style>
 </head>
 <body>
-　　<a href="./index.html" style="
-    position: fixed;
-    top: 20px;
-    left: 20px;
-    z-index: 9999;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 20px;
-    background-color: rgba(255, 255, 255, 0.85);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(114, 154, 192, 0.4); /* 使用主題色藍灰 729ac0 的線條 */
-    border-radius: 50px;
-    color: # d27575; /* 使用主題色赭紅 d27575 */
-    font-family: 'Noto Sans TC', sans-serif;
-    font-size: 14px;
-    font-weight: 500;
-    text-decoration: none;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
-    transition: all 0.3s ease;
-" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(114, 154, 192, 0.3)'; this.style.backgroundColor='#729ac0'; this.style.color='#ffffff';" 
-  onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(0, 0, 0, 0.08)'; this.style.backgroundColor='rgba(255, 255, 255, 0.85)'; this.style.color='#d27575';">
-    <i class="fa-solid fa-house"></i>
-    <span>返回首頁</span>
-</a>
+
+    <!-- 🌟 動態返回首頁按鈕 -->
+    <a href="./index.html" class="back-home-btn">
+        <i class="fa-solid fa-house"></i>
+        <span>返回首頁</span>
+    </a>
 
     <div class="top-toolbar">
         <button class="fullscreen-btn" onclick="toggleFullscreen()">
@@ -452,7 +496,7 @@
         function toggleFullscreen() {
             if (!document.fullscreenElement) {
                 document.documentElement.requestFullscreen().catch(err => {
-                    alert(`無法切換全螢幕: ${err.message}`);
+                    console.warn(`無法切換全螢幕: ${err.message}`);
                 });
             } else {
                 document.exitFullscreen();
@@ -460,8 +504,11 @@
         }
 
         function toggleFullscreenFromBook(event) {
-            if (!document.fullscreenElement) {
-                toggleFullscreen();
+            // 如果點擊的不是換頁按鈕，也不是下拉選單或回首頁按鈕，則雙擊或點擊空白進入全螢幕
+            if (event.target.tagName !== 'SELECT' && event.target.tagName !== 'OPTION' && !event.target.closest('.back-home-btn')) {
+                if (!document.fullscreenElement) {
+                    toggleFullscreen();
+                }
             }
         }
 
