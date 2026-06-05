@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fakeout 影院 - 八集聯播系統</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons for beautiful controls -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* 隱藏原生影片控制條，使用我們自訂的精美控制條 */
+        video::-webkit-media-controls {
+            display: none !important;
+        }
+        video::-webkit-media-controls-enclosure {
+            display: none !important;
+        }
+        /* 自訂滾動條樣式 */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #111;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #c5a85c;
+            border-radius: 3px;
+        }
+        /* 金色光暈 */
+        .gold-glow:hover {
+            box-shadow: 0 0 15px rgba(197, 168, 92, 0.5);
+        }
+    </style>
+</head>
+<body class="bg-stone-950 text-stone-100 min-h-screen flex flex-col justify-between font-sans selection:bg-amber-500 selection:text-black">
+
+    <!-- 首次進入網頁的互動遮罩（完美解決瀏覽器禁止有聲影片自動播放的限制） -->
+    <div id="welcomeOverlay" class="fixed inset-0 bg-stone-950 z-50 flex flex-col items-center justify-center p-4 transition-opacity duration-500">
+        <div class="text-center max-w-md">
+            <h1 class="text-4xl font-extrabold text-amber-500 tracking-wider mb-2">PROJECT FAKEOUT</h1>
+            <p class="text-stone-400 mb-8">歡迎來到專屬放映廳</p>
+            <button id="btnEnterTheater" class="px-8 py-4 bg-amber-500 text-stone-950 font-bold text-lg rounded-full shadow-lg hover:bg-amber-400 transition-all duration-300 transform hover:scale-105 gold-glow">
+                <i class="fa-solid fa-ticket mr-2"></i> 點擊進入影院
+            </button>
+            <p class="text-xs text-stone-500 mt-4">點擊後將會開始播放宣傳片（含聲音）</p>
+        </div>
+    </div>
+
+    <!-- 頂部導覽列 -->
+    <header class="border-b border-stone-800 bg-stone-900/80 backdrop-blur px-6 py-4 sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <span class="bg-amber-500 text-stone-950 text-xs font-bold px-2.5 py-1 rounded">PRO</span>
+                <h1 class="text-xl font-bold tracking-widest text-amber-500">PROJECT FAKEOUT</h1>
+            </div>
+            <div class="text-sm text-stone-400">
+                正在播放：<span id="currentStatus" class="text-amber-400 font-semibold">宣傳片 (Loop)</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主要內容區 -->
+    <main class="flex-grow max-w-7xl w-full mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-4 gap-6">
+        
+        <!-- 左側/中間：銀幕與影片播放器區 (佔 3 欄) -->
+        <div class="lg:col-span-3 flex flex-col space-y-4">
+            
+            <!-- 影片銀幕容器 -->
+            <div class="relative aspect-video w-full bg-black rounded-xl overflow-hidden border border-stone-800 shadow-2xl group">
+                
+                <!-- HTML5 Video 元素 -->
+                <video id="videoPlayer" class="w-full h-full object-contain" playsinline>
+                    <!-- 預設播放宣傳片 -->
+                    <source id="videoSource" src="project_fakeout video.mp4" type="video/mp4">
+                    您的瀏覽器不支援 HTML5 影片播放。
+                </video>
+
+                <!-- 10秒完畢互動覆蓋層 (預設隱藏) -->
+                <div id="interactiveOverlay" class="absolute inset-0 bg-stone-950/95 z-20 flex flex-col items-center justify-center p-6 transition-all duration-500 opacity-0 pointer-events-none">
+                    <div class="text-center max-w-md transform translate-y-4 transition-transform duration-500" id="overlayContent">
+                        <div class="inline-flex items-center justify-center w-20 h-20 rounded-full border-4 border-amber-500 text-amber-500 text-3xl font-extrabold mb-6 animate-pulse">
+                            <span id="countdownText">10</span>
+                        </div>
+                        <h2 class="text-2xl font-bold text-stone-100 mb-2">本集播放完畢</h2>
+                        <p class="text-stone-400 text-sm mb-8">即將自動返回宣傳片...</p>
+                        
+                        <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
+                            <button id="btnReturn" class="w-full sm:w-auto px-6 py-3 bg-stone-800 hover:bg-stone-700 text-stone-200 font-semibold rounded-lg transition duration-200 flex items-center justify-center">
+                                <i class="fa-solid fa-arrow-rotate-left mr-2"></i> 返回宣傳片
+                            </button>
+                            <button id="btnNext" class="w-full sm:w-auto px-8 py-3 bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold rounded-lg transition duration-200 flex items-center justify-center shadow-lg shadow-amber-500/20">
+                                下一集 <i class="fa-solid fa-chevron-right ml-2"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 自訂控制條 (滑鼠移入時顯示，在行動裝置上點擊顯示) -->
+                <div id="customControls" class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-stone-950 via-stone-900/90 to-transparent p-4 pt-12 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity duration-300 z-10 flex flex-col space-y-3">
+                    
+                    <!-- 進度條 -->
+                    <div class="flex items-center space-x-2">
+                        <span id="currentTime" class="text-xs text-stone-400 font-mono">00:00</span>
+                        <div id="progressBarContainer" class="flex-grow h-1.5 bg-stone-700/60 rounded-full cursor-pointer relative group/progress">
+                            <div id="progressBar" class="h-full bg-amber-500 rounded-full w-0 relative">
+                                <div class="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full border border-amber-500 scale-0 group-hover/progress:scale-100 transition-transform"></div>
+                            </div>
+                        </div>
+                        <span id="durationTime" class="text-xs text-stone-400 font-mono">00:00</span>
+                    </div>
+
+                    <!-- 按鈕列 -->
+                    <div class="flex items-center justify-between">
+                        <!-- 左側：播放與音量 -->
+                        <div class="flex items-center space-x-4">
+                            <!-- 播放 / 暫停 -->
+                            <button id="btnPlayPause" class="text-stone-300 hover:text-amber-400 transition text-lg w-8 h-8 flex items-center justify-center" title="播放/暫停">
+                                <i class="fa-solid fa-play"></i>
+                            </button>
+                            
+                            <!-- 音量控制 -->
+                            <div class="flex items-center space-x-2 group/volume">
+                                <button id="btnMute" class="text-stone-300 hover:text-amber-400 transition text-lg w-8 h-8 flex items-center justify-center" title="靜音/取消靜音">
+                                    <i class="fa-solid fa-volume-high"></i>
+                                </button>
+                                <input id="volumeSlider" type="range" min="0" max="1" step="0.05" value="0.8" class="w-20 h-1 bg-stone-700 rounded-lg appearance-none cursor-pointer accent-amber-500 transition-all group-hover/volume:w-24">
+                            </div>
+                        </div>
+
+                        <!-- 右側：返回宣傳片按鈕與全螢幕 -->
+                        <div class="flex items-center space-x-4">
+                            <button id="btnQuickPromo" class="text-xs bg-stone-800 hover:bg-stone-700 text-stone-300 hover:text-amber-400 transition px-3 py-1.5 rounded border border-stone-700" title="切換回宣傳片">
+                                <i class="fa-solid fa-photo-film mr-1"></i> 宣傳片
+                            </button>
+                            <button id="btnFullscreen" class="text-stone-300 hover:text-amber-400 transition text-lg w-8 h-8 flex items-center justify-center" title="全螢幕">
+                                <i class="fa-solid fa-expand"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- 當前播放資訊卡片 -->
+            <div class="bg-stone-900 border border-stone-800 p-5 rounded-xl">
+                <div class="flex flex-wrap justify-between items-start gap-4">
+                    <div>
+                        <span class="text-xs font-bold text-amber-500 uppercase tracking-widest" id="infoTag">Promo Video</span>
+                        <h2 class="text-2xl font-bold mt-1" id="infoTitle">project_fakeout video</h2>
+                        <div class="text-stone-400 text-sm mt-2 leading-relaxed" id="infoDesc">
+                            現正播放主打宣傳片。此影片設置為有聲、自動無限迴圈播放。您可於右側（或下方）播放清單中選擇您想觀看的單集內容。
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- 右側：8集播放清單 (佔 1 欄) -->
+        <div class="lg:col-span-1 flex flex-col space-y-4">
+            <div class="bg-stone-900 border border-stone-800 rounded-xl p-4 flex-grow flex flex-col h-[500px] lg:h-auto">
+                <h3 class="text-lg font-bold text-stone-100 mb-3 pb-3 border-b border-stone-800 flex items-center justify-between">
+                    <span>影片清單 (共 8 集)</span>
+                    <span class="text-xs bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded font-mono">8 Episodes</span>
+                </h3>
+                
+                <!-- 播放清單捲動區域 -->
+                <div class="flex-grow overflow-y-auto space-y-2 pr-1" id="playlistContainer">
+                    <!-- 宣傳片項目 -->
+                    <button id="playlist-promo" onclick="playPromo()" class="w-full text-left p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center space-x-3 transition-all duration-200">
+                        <div class="w-12 h-8 bg-stone-950 rounded flex items-center justify-center text-xs font-bold border border-amber-500/20">
+                            <i class="fa-solid fa-photo-film"></i>
+                        </div>
+                        <div class="flex-grow min-w-0">
+                            <p class="font-bold text-sm truncate">宣傳片</p>
+                            <p class="text-xs text-amber-500/70 truncate">project_fakeout</p>
+                        </div>
+                    </button>
+
+                    <!-- 動態生成 1-8 集按鈕 -->
+                    <!-- 這些將在 JS 中生成，方便狀態管理 -->
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- 頁尾 -->
+    <footer class="border-t border-stone-900 bg-stone-950/80 py-4 text-center text-xs text-stone-500">
+        <div class="max-w-7xl mx-auto px-4">
+            <p>© 2026 PROJECT FAKEOUT. 版權所有。若影片無法播放，請檢查本地影片檔案路徑是否正確。</p>
+        </div>
+    </footer>
+
+    <!-- JavaScript 邏輯控制 -->
+    <script>
+        // --- 狀態與資料定義 ---
+        const EPISODES_COUNT = 8;
+        
+        // 影片資訊列表 (修正多行字串造成 JS 語法崩潰的問題，使用單行 + <br> 方式)
+        const playlistData = [
+            { id: 'promo', title: '右側播放清單中可以選擇想觀看的單集內容~', file: 'video/project_fakeout video.mp4', isPromo: true, desc: '本影片為全集數自動播放' },
+            { id: 1, title: '括號記得刪，一則1000', file: 'video/episode1.mp4', isPromo: false, desc: '› 欸你不覺得那個叫「視緋對錯」的帳號看起來超有質感的嗎？<br>› 追一下唄？（這句記得刪，一則 200）' },
+            { id: 2, title: '爬101不是很簡單？', file: 'video/episode2.mp4', isPromo: false, desc: '› 最近覺得大胃王比賽根本沒甚麼<br>› 那些大胃王又不是真的有吃<br>› 只是胡吃海塞一通而已<br>› 我上我也行阿...（反串要註明）' },
+            { id: 3, title: 'Gumayusi要加入韓華？', file: 'video/episode3.mp4', isPromo: false, desc: '› 我跟你講俄烏戰爭再三個月就要結束了<br>› 真的，信我，媽祖託夢跟我講的<br>› 媽祖：虫合' },
+            { id: 4, title: '所以我說那個事實呢？', file: 'video/episode4.mp4', isPromo: false, desc: '› 感覺手遊重複性很高<br>› 玩來玩去就那樣嗎<br>› 那麼我推薦你......<br>› 【台灣事實查核中心】<br>› 並不能解決電子陽痿問題<br>› 但能解決假新聞查證的問題' },
+            { id: 5, title: '偷情被抓包囉', file: 'video/episode5.mp4', isPromo: false, desc: '› 聽說人在出生時血液內就含有0.05%的酒精濃度<br>› 也就是說把體內的酒精濃度維持在那<br>› 會有最好的狀態對吧<br>› 你說從哪裡聽說的?<br>› 欸......  一部電影。<br>' },
+            { id: 6, title: '你不覺得這篇文章很假？', file: 'video/episode6.mp4', isPromo: false, desc: '› 你不要再看妹了<br>› 休息一下好不好<br>› 來看一點【台灣事實查核中心】好不好<br>› 最近報稅季，相關的詐騙也跑出來了<br>› 來看看跟報稅有關的假消息......' },
+            { id: 7, title: '撿到十萬元還能夠拾金不昧?', file: 'video/episode7.mp4', isPromo: false, desc: '› 驚！科學家發現<br>› 飲用水當中含有這個！！！<br>› 會使喝多的人中毒......<br><br>› 實際上就是說水喝太多也會水中毒<br>› 這種標題看多了破壞力不亞於腦腐啊' },
+            { id: 8, title: '網上太多白癡新聞', file: 'video/episode8.mp4', isPromo: false, desc: '› 這個是誤傳那個是AI<br>› 最近怎麼這麼多假新聞阿<br>› 來源是......朋友A<br>› 朋友A：你知道還有誰會亂轉傳假消息嗎<br>› 我阿罵～<br>› 你給我回家粗住己' }
+        ];
+
+        let currentPlayIndex = 0; // 當前在 playlistData 中的索引，0 是宣傳片
+        let countdownTimer = null;
+        let countdownValue = 10;
+
+        // --- DOM 元素獲取 ---
+        const videoPlayer = document.getElementById('videoPlayer');
+        const videoSource = document.getElementById('videoSource');
+        
+        // 互動層
+        const welcomeOverlay = document.getElementById('welcomeOverlay');
+        const btnEnterTheater = document.getElementById('btnEnterTheater');
+        const interactiveOverlay = document.getElementById('interactiveOverlay');
+        const overlayContent = document.getElementById('overlayContent');
+        const countdownText = document.getElementById('countdownText');
+        const btnReturn = document.getElementById('btnReturn');
+        const btnNext = document.getElementById('btnNext');
+
+        // 控制條元素
+        const customControls = document.getElementById('customControls');
+        const btnPlayPause = document.getElementById('btnPlayPause');
+        const btnMute = document.getElementById('btnMute');
+        const volumeSlider = document.getElementById('volumeSlider');
+        const progressBarContainer = document.getElementById('progressBarContainer');
+        const progressBar = document.getElementById('progressBar');
+        const currentTimeText = document.getElementById('currentTime');
+        const durationTimeText = document.getElementById('durationTime');
+        const btnQuickPromo = document.getElementById('btnQuickPromo');
+        const btnFullscreen = document.getElementById('btnFullscreen');
+
+        // 資訊展示
+        const currentStatus = document.getElementById('currentStatus');
+        const infoTag = document.getElementById('infoTag');
+        const infoTitle = document.getElementById('infoTitle');
+        const infoDesc = document.getElementById('infoDesc');
+        const playlistContainer = document.getElementById('playlistContainer');
+
+        // --- 初始化播放清單介面 ---
+        function initPlaylistUI() {
+            // 保留原本的宣傳片按鈕，並動態新增 1 到 8 集
+            for (let i = 1; i <= EPISODES_COUNT; i++) {
+                const ep = playlistData[i];
+                const btn = document.createElement('button');
+                btn.id = `playlist-${i}`;
+                btn.className = "w-full text-left p-3 rounded-lg bg-stone-900 border border-stone-800/80 hover:border-stone-700 text-stone-300 hover:text-stone-100 flex items-center space-x-3 transition-all duration-200";
+                btn.onclick = () => playEpisode(i);
+                
+                btn.innerHTML = `
+                    <div class="w-12 h-8 bg-stone-950 rounded flex items-center justify-center text-xs font-mono font-bold text-stone-500 ep-number-badge">
+                        EP${String(i).padStart(2, '0')}
+                    </div>
+                    <div class="flex-grow min-w-0">
+                        <p class="font-semibold text-sm truncate ep-title">${ep.title}</p>
+                        <p class="text-xs text-stone-500 truncate">第 ${i} 集</p>
+                    </div>
+                `;
+                playlistContainer.appendChild(btn);
+            }
+        }
+
+        // --- 點擊進入影院（啟用音效自動播放） ---
+        btnEnterTheater.addEventListener('click', () => {
+            welcomeOverlay.classList.add('opacity-0');
+            setTimeout(() => {
+                welcomeOverlay.classList.add('hidden');
+            }, 500);
+
+            // 開始播放預設的宣傳片
+            playPromo();
+        });
+
+        // --- 播放影片核心函式 ---
+        function loadAndPlayVideo(index) {
+            currentPlayIndex = index;
+            const videoInfo = playlistData[index];
+            
+            // 停止任何正在進行的倒數計時並隱藏覆蓋層
+            hideInteractiveOverlay();
+
+            // 更換影片來源
+            videoSource.src = videoInfo.file;
+            videoPlayer.load();
+
+            // 宣傳片需要無限迴圈
+            if (videoInfo.isPromo) {
+                videoPlayer.loop = true;
+                currentStatus.textContent = "宣傳片 (Loop)";
+                infoTag.textContent = "Promo Video";
+                infoTag.className = "text-xs font-bold text-amber-500 uppercase tracking-widest";
+            } else {
+                videoPlayer.loop = false;
+                currentStatus.textContent = `第 ${videoInfo.id} 集`;
+                infoTag.textContent = `Episode ${videoInfo.id}`;
+                infoTag.className = "text-xs font-bold text-sky-400 uppercase tracking-widest";
+            }
+
+            // 更新資訊面板 (使用 innerHTML 支援說明內部的 <br> 標籤)
+            infoTitle.textContent = videoInfo.title;
+            infoDesc.innerHTML = videoInfo.desc;
+
+            // 更新播放清單 UI 的選取狀態
+            updatePlaylistActiveState(index);
+
+            // 播放影片並更新控制條按鈕狀態
+            const playPromise = videoPlayer.play();
+            if (playPromise !== undefined) {
+                playPromise.then(() => {
+                    updatePlayPauseIcon(true);
+                }).catch(error => {
+                    console.log("自動播放被瀏覽器阻擋:", error);
+                    updatePlayPauseIcon(false);
+                });
+            }
+        }
+
+        // 快捷播放宣傳片
+        function playPromo() {
+            loadAndPlayVideo(0);
+        }
+
+        // 播放特定單集 (1-8)
+        function playEpisode(epNum) {
+            loadAndPlayVideo(epNum);
+        }
+
+        // 更新清單按鈕高亮樣式
+        function updatePlaylistActiveState(activeIndex) {
+            // 先將所有按鈕重設為普通樣式
+            playlistData.forEach((item, index) => {
+                const btnId = item.isPromo ? 'playlist-promo' : `playlist-${item.id}`;
+                const btn = document.getElementById(btnId);
+                if (!btn) return;
+
+                if (index === activeIndex) {
+                    // 高亮樣式
+                    if (item.isPromo) {
+                        btn.className = "w-full text-left p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center space-x-3 transition-all duration-200";
+                    } else {
+                        btn.className = "w-full text-left p-3 rounded-lg bg-sky-500/10 border border-sky-500/30 text-sky-400 flex items-center space-x-3 transition-all duration-200";
+                        const badge = btn.querySelector('.ep-number-badge');
+                        if (badge) badge.className = "w-12 h-8 bg-stone-950 rounded flex items-center justify-center text-xs font-mono font-bold text-sky-400 ep-number-badge";
+                    }
+                } else {
+                    // 普通樣式
+                    if (item.isPromo) {
+                        btn.className = "w-full text-left p-3 rounded-lg bg-stone-900 border border-stone-800/80 hover:border-stone-700 text-stone-300 hover:text-stone-100 flex items-center space-x-3 transition-all duration-200";
+                    } else {
+                        btn.className = "w-full text-left p-3 rounded-lg bg-stone-900 border border-stone-800/80 hover:border-stone-700 text-stone-300 hover:text-stone-100 flex items-center space-x-3 transition-all duration-200";
+                        const badge = btn.querySelector('.ep-number-badge');
+                        if (badge) badge.className = "w-12 h-8 bg-stone-950 rounded flex items-center justify-center text-xs font-mono font-bold text-stone-500 ep-number-badge";
+                    }
+                }
+            });
+        }
+
+
+        // --- 影片結束事件與倒數互動機制 ---
+        videoPlayer.addEventListener('ended', () => {
+            const currentVideo = playlistData[currentPlayIndex];
+            
+            // 如果是宣傳片，因為設定了 loop=true，理論上不會觸發 ended。
+            // 但如果是 1-8 集播放完畢：
+            if (!currentVideo.isPromo) {
+                showInteractiveOverlay();
+            }
+        });
+
+        // 顯示 10 秒倒數計時互動覆蓋層
+        function showInteractiveOverlay() {
+            // 設定「下一集」按鈕文字與狀態
+            if (currentPlayIndex < EPISODES_COUNT) {
+                btnNext.innerHTML = `下一集 (EP${String(currentPlayIndex + 1).padStart(2, '0')}) <i class="fa-solid fa-chevron-right ml-2"></i>`;
+                btnNext.style.display = 'flex';
+            } else {
+                // 如果已經是最後一集 (第8集)，不顯示「下一集」，只留返回
+                btnNext.style.display = 'none';
+            }
+
+            // 顯示覆蓋層
+            interactiveOverlay.classList.remove('opacity-0', 'pointer-events-none');
+            interactiveOverlay.classList.add('opacity-100');
+            overlayContent.classList.remove('translate-y-4');
+            overlayContent.classList.add('translate-y-0');
+
+            // 啟動 10 秒倒數
+            countdownValue = 10;
+            countdownText.textContent = countdownValue;
+            
+            if (countdownTimer) clearInterval(countdownTimer);
+            
+            countdownTimer = setInterval(() => {
+                countdownValue--;
+                countdownText.textContent = countdownValue;
+                
+                if (countdownValue <= 0) {
+                    clearInterval(countdownTimer);
+                    // 10秒內無操作，自動返回宣傳片
+                    playPromo();
+                }
+            }, 1000);
+        }
+
+        // 隱藏互動覆蓋層
+        function hideInteractiveOverlay() {
+            if (countdownTimer) {
+                clearInterval(countdownTimer);
+                countdownTimer = null;
+            }
+            interactiveOverlay.classList.remove('opacity-100');
+            interactiveOverlay.classList.add('opacity-0', 'pointer-events-none');
+            overlayContent.classList.remove('translate-y-0');
+            overlayContent.classList.add('translate-y-4');
+        }
+
+        // 互動層按鈕：【返回宣傳片】
+        btnReturn.addEventListener('click', () => {
+            playPromo();
+        });
+
+        // 互動層按鈕：【下一集】
+        btnNext.addEventListener('click', () => {
+            if (currentPlayIndex < EPISODES_COUNT) {
+                playEpisode(currentPlayIndex + 1);
+            } else {
+                playPromo();
+            }
+        });
+
+
+        // --- 自訂控制條功能 (Play, Pause, Mute, Seek, Volume) ---
+
+        // 更新 播放/暫停 按鈕圖示
+        function updatePlayPauseIcon(isPlaying) {
+            if (isPlaying) {
+                btnPlayPause.innerHTML = `<i class="fa-solid fa-pause"></i>`;
+            } else {
+                btnPlayPause.innerHTML = `<i class="fa-solid fa-play"></i>`;
+            }
+        }
+
+        // 點擊 播放/暫停
+        btnPlayPause.addEventListener('click', () => {
+            if (videoPlayer.paused) {
+                videoPlayer.play();
+                updatePlayPauseIcon(true);
+            } else {
+                videoPlayer.pause();
+                updatePlayPauseIcon(false);
+            }
+        });
+
+        // 點擊影片主體也可以 播放/暫停
+        videoPlayer.addEventListener('click', () => {
+            // 如果互動層顯示中，不允許點擊影片暫停
+            if (interactiveOverlay.classList.contains('opacity-100')) return;
+            
+            if (videoPlayer.paused) {
+                videoPlayer.play();
+                updatePlayPauseIcon(true);
+            } else {
+                videoPlayer.pause();
+                updatePlayPauseIcon(false);
+            }
+        });
+
+        // 當影片狀態自發性改變（例如瀏覽器事件）時同步按鈕
+        videoPlayer.addEventListener('play', () => updatePlayPauseIcon(true));
+        videoPlayer.addEventListener('pause', () => updatePlayPauseIcon(false));
+
+        // 格式化時間 (秒 -> mm:ss)
+        function formatTime(seconds) {
+            if (isNaN(seconds)) return "00:00";
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        }
+
+        // 監聽進度更新
+        videoPlayer.addEventListener('timeupdate', () => {
+            if (videoPlayer.duration) {
+                const percent = (videoPlayer.currentTime / videoPlayer.duration) * 100;
+                progressBar.style.width = `${percent}%`;
+                currentTimeText.textContent = formatTime(videoPlayer.currentTime);
+            }
+        });
+
+        // 監聽影片長度加載完畢
+        videoPlayer.addEventListener('loadedmetadata', () => {
+            durationTimeText.textContent = formatTime(videoPlayer.duration);
+        });
+
+        // 進度條跳轉功能 (Seek)
+        progressBarContainer.addEventListener('click', (e) => {
+            const rect = progressBarContainer.getBoundingClientRect();
+            const clickPosition = (e.clientX - rect.left) / rect.width;
+            videoPlayer.currentTime = clickPosition * videoPlayer.duration;
+        });
+
+        // 拖曳進度條支援 (電腦版/手機版)
+        let isDraggingProgress = false;
+        progressBarContainer.addEventListener('mousedown', () => isDraggingProgress = true);
+        document.addEventListener('mouseup', () => isDraggingProgress = false);
+        document.addEventListener('mousemove', (e) => {
+            if (isDraggingProgress) {
+                const rect = progressBarContainer.getBoundingClientRect();
+                let clickPosition = (e.clientX - rect.left) / rect.width;
+                clickPosition = Math.max(0, Math.min(1, clickPosition)); // 限制在 0-1 之間
+                videoPlayer.currentTime = clickPosition * videoPlayer.duration;
+            }
+        });
+
+        // 音量滑動條調整
+        volumeSlider.addEventListener('input', (e) => {
+            const vol = e.target.value;
+            videoPlayer.volume = vol;
+            videoPlayer.muted = (vol == 0);
+            updateVolumeIcon(vol, videoPlayer.muted);
+        });
+
+        // 一鍵靜音與恢復
+        let lastVolume = 0.8;
+        btnMute.addEventListener('click', () => {
+            if (videoPlayer.muted) {
+                videoPlayer.muted = false;
+                videoPlayer.volume = lastVolume;
+                volumeSlider.value = lastVolume;
+                updateVolumeIcon(lastVolume, false);
+            } else {
+                lastVolume = videoPlayer.volume;
+                videoPlayer.muted = true;
+                volumeSlider.value = 0;
+                updateVolumeIcon(0, true);
+            }
+        });
+
+        function updateVolumeIcon(volume, isMuted) {
+            if (isMuted || volume == 0) {
+                btnMute.innerHTML = `<i class="fa-solid fa-volume-xmark text-stone-500"></i>`;
+            } else if (volume < 0.4) {
+                btnMute.innerHTML = `<i class="fa-solid fa-volume-low"></i>`;
+            } else {
+                btnMute.innerHTML = `<i class="fa-solid fa-volume-high"></i>`;
+            }
+        }
+
+        // 控制條中的快速返回宣傳片按鈕
+        btnQuickPromo.addEventListener('click', () => {
+            playPromo();
+        });
+
+        // 全螢幕切換
+        btnFullscreen.addEventListener('click', () => {
+            const videoContainer = videoPlayer.parentElement; // 使用容器做全螢幕以保留自訂控制條
+            if (!document.fullscreenElement) {
+                videoContainer.requestFullscreen().catch(err => {
+                    console.log(`全螢幕切換錯誤: ${err.message}`);
+                });
+            } else {
+                document.exitFullscreen();
+            }
+        });
+
+
+        // --- 初始化執行 ---
+        window.onload = function() {
+            initPlaylistUI();
+            
+            // 預設將音量條設置為 0.8
+            videoPlayer.volume = 0.8;
+            volumeSlider.value = 0.8;
+        };
+    </script>
+</body>
+</html>

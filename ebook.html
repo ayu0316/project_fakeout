@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>數位資訊生存指南 - 電子書</title>
+    <style>
+        /* 1. 滿版全螢幕基礎設定 */
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #f4f4f4; /* 兩側底色維持淺灰 */
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+            overflow: hidden; 
+        }
+
+        /* 2. 置頂全螢幕按鈕 */
+        .top-toolbar {
+            position: absolute;
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 300;
+            opacity: 0.2;
+            transition: opacity 0.3s;
+        }
+        .top-toolbar:hover {
+            opacity: 1;
+        }
+
+        .fullscreen-btn {
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid #ddd;
+            padding: 8px 16px;
+            font-size: 0.85rem;
+            border-radius: 20px;
+            cursor: pointer;
+            color: #333;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        /* 3. 電子書大包裝 */
+        .stage-container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* 4. 電子書容器
+           修正核心：取消死板的 width 限制，改用 max-width 控制，
+           讓裡面的內頁自己依照原圖比例把寬度自然撐開！
+        */
+        .book-container {
+            position: absolute;
+            height: 100vh; 
+            top: 0;
+            display: flex;
+            justify-content: center;
+            z-index: 5;
+        }
+
+        /* 中間裝訂線陰影：維持在正中央 */
+        .book-container::after {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: 0;
+            width: 4px;
+            height: 100%;
+            transform: translateX(-50%);
+            background: linear-gradient(to right, rgba(0,0,0,0.12), rgba(0,0,0,0) 30%, rgba(0,0,0,0) 70%, rgba(0,0,0,0.12));
+            z-index: 50;
+            pointer-events: none;
+        }
+        .book-container.single-view::after {
+            display: none;
+        }
+
+        /* 顯示單元（組）基礎設定 */
+        .page-group {
+            position: absolute;
+            height: 100%;
+            top: 0;
+            display: flex;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease-in-out;
+            z-index: 1;
+        }
+
+        .page-group.active {
+            opacity: 1;
+            pointer-events: auto;
+            z-index: 10;
+        }
+
+        /* 【雙頁排版】
+           修正：寬度設定為 auto，高度 100%，由裡面的圖片（img）決定寬度
+        */
+        .double-page .left-side, 
+        .double-page .right-side {
+            height: 100%;
+            width: auto;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* 【單頁排版】封面與封底 */
+        .single-page-center {
+            height: 100%;
+            width: auto;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* 圖片設定：
+           終極修正：高度 100% 貼齊螢幕，寬度設為 auto 讓它依據 2150x3035 原圖比例自由舒展，
+           搭配 object-fit: contain 確保絕對不變形、不壓扁！
+        */
+        img {
+            height: 100%;
+            width: auto;
+            object-fit: contain; 
+            display: block;
+            user-select: none;
+            -webkit-user-drag: none;
+            box-shadow: 0 0 20px rgba(0,0,0,0.05); /* 讓書頁邊緣有淡淡的影子 */
+        }
+
+        /* 5. 兩側翻頁大按鈕（覆蓋於書本外側的其餘空間） */
+        .side-btn {
+            position: absolute;
+            top: 0;
+            height: 100%;
+            /* 動態撐滿書本左右兩邊剩下的所有視窗範圍 */
+            width: calc((100vw - 113vh) / 2);
+            min-width: 80px; 
+            background-color: transparent; 
+            border: none;
+            outline: none;
+            cursor: pointer;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.2s ease;
+        }
+        #prevBtn { left: 0; }
+        #nextBtn { right: right: 0; left: auto; right: 0; }
+
+        .side-btn:hover:not(:disabled) {
+            background-color: rgba(0, 0, 0, 0.02); 
+        }
+
+        .side-btn:disabled {
+            cursor: default;
+        }
+
+        /* 箭頭圖示常駐顯示 (opacity: 0.4) */
+        .side-btn svg {
+            width: 56px;
+            height: 56px;
+            fill: #333;
+            opacity: 0.4; 
+            transition: opacity 0.2s, transform 0.2s;
+        }
+        
+        .side-btn:hover:not(:disabled) svg {
+            opacity: 0.9;
+        }
+        #prevBtn:hover svg { transform: translateX(-6px); }
+        #nextBtn:hover svg { transform: translateX(6px); }
+
+        .side-btn:disabled svg {
+            opacity: 0 !important;
+        }
+
+        /* 6. 中央下方的下拉選單 */
+        .menu-container {
+            position: absolute;
+            bottom: 25px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 200; 
+            background: rgba(255, 255, 255, 0.85);
+            padding: 4px 8px;
+            border-radius: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            opacity: 0.2;
+            transition: opacity 0.3s;
+        }
+        .menu-container:hover {
+            opacity: 1;
+        }
+
+        .page-select {
+            padding: 4px 12px;
+            font-size: 0.85rem;
+            border-radius: 15px;
+            border: 1px solid #ccc;
+            background-color: #fff;
+            cursor: pointer;
+            outline: none;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="top-toolbar">
+        <button class="fullscreen-btn" onclick="toggleFullscreen()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+            進入 / 退出全螢幕展示
+        </button>
+    </div>
+
+    <div class="stage-container">
+        
+        <button class="side-btn" id="prevBtn" onclick="prevGroup()" disabled>
+            <svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+        </button>
+
+        <div class="book-container single-view" id="bookView" onclick="toggleFullscreenFromBook(event)">
+            
+            <div class="page-group active" data-view="single">
+                <div class="single-page-center">
+                    <img src="img/封面.jpg" alt="封面">
+                </div>
+            </div>
+
+            <div class="page-group double-page" data-view="double">
+                <div class="left-side"><img src="img/目錄左.jpg" alt="目錄左"></div>
+                <div class="right-side"><img src="img/目錄右.jpg" alt="目錄右"></div>
+            </div>
+
+            <div class="page-group double-page" data-view="double">
+                <div class="left-side"><img src="img/1_01.jpg" alt="1_01"></div>
+                <div class="right-side"><img src="img/1_02.jpg" alt="1_02"></div>
+            </div>
+            <div class="page-group double-page" data-view="double">
+                <div class="left-side"><img src="img/1_03.jpg" alt="1_03"></div>
+                <div class="right-side"><img src="img/1_04.jpg" alt="1_04"></div>
+            </div>
+            <div class="page-group double-page" data-view="double">
+                <div class="left-side"><img src="img/1_05.jpg" alt="1_05"></div>
+                <div class="right-side"><img src="img/1_06.jpg" alt="1_06"></div>
+            </div>
+            <div class="page-group double-page" data-view="double">
+                <div class="left-side"><img src="img/1_07.jpg" alt="1_07"></div>
+                <div class="right-side"><img src="img/1_08.jpg" alt="1_08"></div>
+            </div>
+
+            <div class="page-group double-page" data-view="double">
+                <div class="left-side"><img src="img/2_01.jpg" alt="2_01"></div>
+                <div class="right-side"><img src="img/2_02.jpg" alt="2_02"></div>
+            </div>
+            <div class="page-group double-page" data-view="double">
+                <div class="left-side"><img src="img/2_03.jpg" alt="2_03"></div>
+                <div class="right-side"><img src="img/2_04.jpg" alt="2_04"></div>
+            </div>
+            <div class="page-group double-page" data-view="double">
+                <div class="left-side"><img src="img/2_05.jpg" alt="2_05"></div>
+                <div class="right-side"><img src="img/2_06.jpg" alt="2_06"></div>
+            </div>
+            <div class="page-group double-page" data-view="double">
+                <div class="left-side"><img src="img/2_07.jpg" alt="2_07"></div>
+                <div class="right-side"><img src="img/2_08.jpg" alt="2_08"></div>
+            </div>
+
+            <div class="page-group double-page" data-view="double">
+                <div class="left-side"><img src="img/3_01.jpg" alt="3_01"></div>
+                <div class="right-side"><img src="img/3_02.jpg" alt="3_02"></div>
+            </div>
+            <div class="page-group double-page" data-view="double">
+                <div class="left-side"><img src="img/3_03.jpg" alt="3_03"></div>
+                <div class="right-side"><img src="img/3_04.jpg" alt="3_04"></div>
+            </div>
+            <div class="page-group double-page" data-view="double">
+                <div class="left-side"><img src="img/3_05.jpg" alt="3_05"></div>
+                <div class="right-side"><img src="img/3_06.jpg" alt="3_06"></div>
+            </div>
+            <div class="page-group double-page" data-view="double">
+                <div class="left-side"><img src="img/3_07.jpg" alt="3_07"></div>
+                <div class="right-side"><img src="img/3_08.jpg" alt="3_08"></div>
+            </div>
+
+            <div class="page-group double-page" data-view="double">
+                <div class="left-side"><img src="img/4_01.jpg" alt="4_01"></div>
+                <div class="right-side"><img src="img/4_02.jpg" alt="4_02"></div>
+            </div>
+            <div class="page-group double-page" data-view="double">
+                <div class="left-side"><img src="img/4_03.jpg" alt="4_03"></div>
+                <div class="right-side"><img src="img/4_04.jpg" alt="4_04"></div>
+            </div>
+            <div class="page-group double-page" data-view="double">
+                <div class="left-side"><img src="img/4_05.jpg" alt="4_05"></div>
+                <div class="right-side"><img src="img/4_06.jpg" alt="4_06"></div>
+            </div>
+            <div class="page-group double-page" data-view="double">
+                <div class="left-side"><img src="img/4_07.jpg" alt="4_07"></div>
+                <div class="right-side"><img src="img/4_08.jpg" alt="4_08"></div>
+            </div>
+
+            <div class="page-group double-page" data-view="double">
+                <div class="left-side"><img src="img/5_01.jpg" alt="5_01"></div>
+                <div class="right-side"><img src="img/5_02.jpg" alt="5_02"></div>
+            </div>
+            <div class="page-group double-page" data-view="double">
+                <div class="left-side"><img src="img/5_03.jpg" alt="5_03"></div>
+                <div class="right-side"><img src="img/5_04.jpg" alt="5_04"></div>
+            </div>
+            <div class="page-group double-page" data-view="double">
+                <div class="left-side"><img src="img/5_05.jpg" alt="5_05"></div>
+                <div class="right-side"><img src="img/5_06.jpg" alt="5_06"></div>
+            </div>
+            <div class="page-group double-page" data-view="double">
+                <div class="left-side"><img src="img/5_07.jpg" alt="5_07"></div>
+                <div class="right-side"><img src="img/5_08.jpg" alt="5_08"></div>
+            </div>
+
+            <div class="page-group double-page" data-view="double">
+                <div class="left-side"><img src="img/6_01.jpg" alt="6_01"></div>
+                <div class="right-side"><img src="img/6_02.jpg" alt="6_02"></div>
+            </div>
+
+            <div class="page-group" data-view="single">
+                <div class="single-page-center">
+                    <img src="img/封底.jpg" alt="封底">
+                </div>
+            </div>
+
+        </div>
+
+        <button class="side-btn" id="nextBtn" onclick="nextGroup()">
+            <svg viewBox="0 0 24 24"><path d="M8.59 16.59L13.17 12 8.59 7.41L10 6l6 6-6 6-1.41-1.41z"/></svg>
+        </button>
+
+        <div class="menu-container">
+            <select class="page-select" id="pageSelector" onchange="jumpToGroup(this.value)">
+                <option value="0">封面</option>
+                <option value="1">目錄</option>
+                <option value="2">第一章 (1_01 - 1_02)</option>
+                <option value="3">第一章 (1_03 - 1_04)</option>
+                <option value="4">第一章 (1_05 - 1_06)</option>
+                <option value="5">第一章 (1_07 - 1_08)</option>
+                <option value="6">第二章 (2_01 - 2_02)</option>
+                <option value="7">第二章 (2_03 - 2_04)</option>
+                <option value="8">第二章 (2_05 - 2_06)</option>
+                <option value="9">第二章 (2_07 - 2_08)</option>
+                <option value="10">第三章 (3_01 - 3_02)</option>
+                <option value="11">第三章 (3_03 - 3_04)</option>
+                <option value="12">第三章 (3_05 - 3_06)</option>
+                <option value="13">第三章 (3_07 - 3_08)</option>
+                <option value="14">第四章 (4_01 - 4_02)</option>
+                <option value="15">第四章 (4_03 - 4_04)</option>
+                <option value="16">第四章 (4_05 - 4_06)</option>
+                <option value="17">第四章 (4_07 - 4_08)</option>
+                <option value="18">第五章 (5_01 - 5_02)</option>
+                <option value="19">第五章 (5_03 - 5_04)</option>
+                <option value="20">第五章 (5_05 - 5_06)</option>
+                <option value="21">第五章 (5_07 - 5_08)</option>
+                <option value="22">陸、參考資料 (6_01 - 6_02)</option>
+                <option value="23">封底</option>
+            </select>
+        </div>
+
+    </div>
+
+    <script>
+        const bookView = document.getElementById('bookView');
+        const groups = document.querySelectorAll('.page-group');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const pageSelector = document.getElementById('pageSelector');
+        
+        let currentGroupIndex = 0;
+
+        function updateDisplay() {
+            groups.forEach((group, index) => {
+                if (index === currentGroupIndex) {
+                    group.classList.add('active');
+                    if (group.getAttribute('data-view') === 'single') {
+                        bookView.classList.add('single-view');
+                    } else {
+                        bookView.classList.remove('single-view');
+                    }
+                } else {
+                    group.classList.remove('active');
+                }
+            });
+
+            prevBtn.disabled = (currentGroupIndex === 0);
+            nextBtn.disabled = (currentGroupIndex === groups.length - 1);
+            pageSelector.value = currentGroupIndex;
+        }
+
+        function nextGroup() {
+            if (currentGroupIndex < groups.length - 1) {
+                currentGroupIndex++;
+                updateDisplay();
+            }
+        }
+
+        function prevGroup() {
+            if (currentGroupIndex > 0) {
+                currentGroupIndex--;
+                updateDisplay();
+            }
+        }
+
+        function jumpToGroup(index) {
+            currentGroupIndex = parseInt(index);
+            updateDisplay();
+        }
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    alert(`無法切換全螢幕: ${err.message}`);
+                });
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        function toggleFullscreenFromBook(event) {
+            if (!document.fullscreenElement) {
+                toggleFullscreen();
+            }
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight') nextGroup();
+            if (e.key === 'ArrowLeft') prevGroup();
+        });
+    </script>
+</body>
+</html>
